@@ -1,4 +1,4 @@
-notebookd/
+notebooks/
 checkpoints/
 .ipynb_checkpoints/
 MinkowskiEngine/
