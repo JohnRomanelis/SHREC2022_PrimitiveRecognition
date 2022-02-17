@@ -1,0 +1,5 @@
+notebookd/
+checkpoints/
+.ipynb_checkpoints/
+MinkowskiEngine/
+__pycache__/
