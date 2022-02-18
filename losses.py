@@ -8,22 +8,29 @@ class Losses():
             ax1: Bx3
             ax2: Bx3
         '''
-        
+        A = ax1.shape
         B = ax1.shape[0]
         
         #normalizing
         ax1 = ax1 / self.norm(ax1)
         ax2 = ax2 / self.norm(ax2)
+        a = torch.ones(B).to(ax1.device) 
+        b =  (ax1.unsqueeze(1) @ ax2.unsqueeze(-1))
         
-        #torch Tensor: B
-        return  (torch.ones(B).to(ax1.device) - (ax1.unsqueeze(1) @ ax2.unsqueeze(-1)).abs().squeeze(-1))#.mean()
+        #Absolute values
+        #c = b.abs().squeeze()
+
+        #Square
+        c = (b * b).squeeze() 
+
+        return a-c
 
     def AxisToAxisAngle(self, ax1, ax2):
         '''
             ax1: Bx3
             ax2: Bx3
         '''
-        
+        raise Exception
         B = ax1.shape[0]
         
         #normalizing
@@ -81,7 +88,7 @@ class Losses():
             return ((s1-s2) * (s1 - s2)).mean()
         
         #torch Tensor: B
-        return ((s1-s2) * (s1-s2)).squeeze(-1)#.mean()
+        return ((s1-s2) * (s1-s2)).squeeze()#.mean()
     
     def PointToPlaneLoss(self, p, v, n):
         
@@ -96,7 +103,7 @@ class Losses():
         #return (n.unsqueeze(1) @ p.unsqueeze(-1)).squeeze(-1) + d
         
         n = n / self.norm(n)
-        d = (n.unsqueeze(1) @ (p - v).unsqueeze(-1)).squeeze(-1)
+        d = (n.unsqueeze(1) @ (p - v).unsqueeze(-1)).squeeze()
     
         #torch Tensor: B
         return d.abs()#.mean()
@@ -164,7 +171,7 @@ class CylinderLoss(Losses):
         #
         a_loss = self.AxisToAxisLoss(pred_axis, actual_axis)
         #
-        v_loss = self.PointToAxisLoss(pred_vertex, actual_axis)
+        v_loss = self.PointToAxisLoss(pred_vertex, actual_axis, actual_vertex)
         #
         r_loss = self.ScalarToScalarLoss(pred_r, actual_r)
         
@@ -212,7 +219,7 @@ class ConeLoss(Losses):
         #
         a_loss = self.AxisToAxisLoss(pred_axis, actual_axis)
         #
-        v_loss = self.PointToAxisLoss(pred_vertex, actual_axis)
+        v_loss = self.PointToAxisLoss(pred_vertex, actual_axis, actual_vertex)
         #
         t_loss = self.ScalarToScalarLoss(pred_theta, actual_theta)
         
