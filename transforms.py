@@ -1,5 +1,6 @@
 import torch
 
+
 class GetMean():
     
     def __call__(self, x):

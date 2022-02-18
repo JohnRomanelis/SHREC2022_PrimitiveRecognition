@@ -1,5 +1,7 @@
 import torch
 
+e_offset = 0
+
 class Losses():
         
     def AxisToAxisLoss(self, ax1, ax2):
@@ -8,12 +10,12 @@ class Losses():
             ax1: Bx3
             ax2: Bx3
         '''
-        A = ax1.shape
+        # A = ax1.shape
         B = ax1.shape[0]
         
         #normalizing
-        ax1 = ax1 / self.norm(ax1)
-        ax2 = ax2 / self.norm(ax2)
+        ax1 = ax1 / (self.norm(ax1) + e_offset)
+        ax2 = ax2 / (self.norm(ax2) + e_offset)
         a = torch.ones(B).to(ax1.device) 
         b =  (ax1.unsqueeze(1) @ ax2.unsqueeze(-1))
         
@@ -70,11 +72,20 @@ class Losses():
             ax: Bx3 actual axis
             v:  Bx3 a point on the actual axis
         '''
+
+        assert p.shape[-1] == 3 and ax.shape[-1] == 3 and v.shape[-1] == 3
         
-        dist = self.norm(torch.cross(p-v, p - v - ax)) / self.norm(ax)
-        
+        U1 = p - v
+        U2 = p - v - ax
+        l = self.norm(ax) + e_offset
+        # print("actual axis length", l)
+        # print(U1.shape, U2.shape, l.min())
+
+        dist = self.norm(torch.cross(U1, U2)) / l
+        # print(dist.min(), dist.max(), dist.mean(), torch.isnan(dist).any())
+
         #torch Tensor: B
-        return dist#.mean()
+        return dist.squeeze()#.mean()
         
     
     def ScalarToScalarLoss(self, s1, s2):
@@ -84,8 +95,11 @@ class Losses():
             s2: B x 1 or B
         '''
 
+        #print(s1.shape, s2.shape)
+        assert s1.shape == s2.shape
+
         if s1.dim() == 1:
-            return ((s1-s2) * (s1 - s2)).mean()
+            return ((s1-s2) * (s1 - s2))
         
         #torch Tensor: B
         return ((s1-s2) * (s1-s2)).squeeze()#.mean()
@@ -102,7 +116,7 @@ class Losses():
         #d = -(n.unsqueeze(1) @ v.unsqueeze(-1)).squeeze(-1)
         #return (n.unsqueeze(1) @ p.unsqueeze(-1)).squeeze(-1) + d
         
-        n = n / self.norm(n)
+        n = n / (self.norm(n) + e_offset)
         d = (n.unsqueeze(1) @ (p - v).unsqueeze(-1)).squeeze()
     
         #torch Tensor: B
@@ -110,7 +124,7 @@ class Losses():
     
     def norm(self, v):
         
-        ''' λύ
+        ''' 
             returns the lengths of B vectors contained in a tensor
             B x d
         '''
@@ -131,8 +145,9 @@ class PlaneLoss(Losses):
         #
         v_loss = self.PointToPlaneLoss(pred_vertex, actual_vertex, actual_normal)
         
-        return n_loss + v_loss
-    
+        # return n_loss + v_loss
+        return n_loss, v_loss
+
 
     def transform_plane_outputs(self, plane_pred, trans):
         
@@ -170,13 +185,23 @@ class CylinderLoss(Losses):
         
         #
         a_loss = self.AxisToAxisLoss(pred_axis, actual_axis)
+        #index = torch.isnan(a_loss)
+        #print(index.shape)
+        #print(pred_axis[index])
+        #print(actual_axis[index])
+        
         #
         v_loss = self.PointToAxisLoss(pred_vertex, actual_axis, actual_vertex)
         #
         r_loss = self.ScalarToScalarLoss(pred_r, actual_r)
-        
-        return a_loss + v_loss + r_loss
-    
+       
+        # print("a, v, r is nan: ", torch.isnan(a_loss).any(), torch.isnan(v_loss).any(), torch.isnan(r_loss).any())
+
+        # print("Cylinder: ")
+        # print("a, v, r: ", a_loss.shape, v_loss.shape, r_loss.shape)
+
+        #return a_loss + v_loss + r_loss
+        return a_loss, v_loss, r_loss
 
     def transform_cylinder_outputs(self, cyl_pred, trans):
         
@@ -202,8 +227,10 @@ class CylinderLoss(Losses):
             vertex = (rotation_mat @ vertex.unsqueeze(-1)).squeeze(-1)
         vertex = vertex * scale
         vertex = vertex - shift
-        r = r * scale
+        r = r * scale.squeeze()
 
+        # print("transform_cylinder_outputs")
+        # print(r.shape, axis.shape, vertex.shape)
         return r, axis, vertex
 
     
@@ -218,12 +245,20 @@ class ConeLoss(Losses):
         
         #
         a_loss = self.AxisToAxisLoss(pred_axis, actual_axis)
+        # index = torch.isnan(a_loss)
+        # print(pred_axis[index])
+        # print(actual_axis[index])
         #
         v_loss = self.PointToAxisLoss(pred_vertex, actual_axis, actual_vertex)
         #
         t_loss = self.ScalarToScalarLoss(pred_theta, actual_theta)
+
+        # print("a, v, t is nan: ", torch.isnan(a_loss).any(), torch.isnan(v_loss).any(), torch.isnan(t_loss).any())
+        # print("Cone: ")
+        # print("a, v, t: ", a_loss.shape, v_loss.shape, t_loss.shape)
         
-        return a_loss + v_loss + t_loss
+        # return a_loss + v_loss + t_loss
+        return a_loss, v_loss, t_loss
     
 
     def transform_cone_outputs(self, cone_pred, trans):
@@ -235,7 +270,7 @@ class ConeLoss(Losses):
 
         scale, shift, rotation_mat = trans["norm_factors"], trans["shifts"], trans["inv_rotations"]
 
-        scale = scale.to(cone_pred.device)
+        scale = scale.to(cone_pred.device).unsqueeze(-1)
         shift = shift.to(cone_pred.device)
         
         theta = cone_pred[:,0]
@@ -265,9 +300,13 @@ class SphereLoss(Losses):
         
         c_loss = self.PointToPointLoss(pred_center, actual_center)
         r_loss = self.ScalarToScalarLoss(pred_r, actual_r)
+
+
+        # print("Sphere: ")
+        # print("c, r: ", c_loss.shape, r_loss.shape)
         
-        return c_loss + r_loss
-    
+        #return c_loss + r_loss
+        return c_loss, r_loss
 
     def transform_sphere_outputs(self, sphere_pred, trans):
         
@@ -290,7 +329,7 @@ class SphereLoss(Losses):
             center = (rotation_mat @ center.unsqueeze(-1)).squeeze(-1)
         center = center * scale
         center = center - shift
-        r = r * scale
+        r = r * scale.squeeze()
 
         return r, center
 
@@ -311,8 +350,11 @@ class TorusLoss(Losses):
         R_loss = self.ScalarToScalarLoss(pred_R, actual_R)
         r_loss = self.ScalarToScalarLoss(pred_r, actual_r)
         
+        # print("Torus: ")
+        # print("a, c, R, r: ", a_loss.shape, c_loss.shape, R_loss.shape, r_loss.shape)
         
-        return a_loss + c_loss + R_loss + r_loss
+        # return a_loss + c_loss + R_loss + r_loss
+        return a_loss, c_loss, R_loss, r_loss
     
 
     def transform_torus_outputs(self, torus_pred, trans):
@@ -341,6 +383,7 @@ class TorusLoss(Losses):
             center = (rotation_mat @ center.unsqueeze(-1)).squeeze(-1)
         center = center * scale
         center = center - shift
-        r = r * scale
+        r = r * scale.squeeze()
+        R = R * scale.squeeze()
 
         return R, r, axis, center

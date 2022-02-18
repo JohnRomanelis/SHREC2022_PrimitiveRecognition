@@ -4,11 +4,15 @@ import torch
 import einops
 import os
 
+def norm(x):
+    return (x * x).sum(-1).sqrt()
 
 ### ---- UTILS ---- ###
 def parse_plane(lines):
     
     normal = torch.Tensor(list(map(float, lines[1:4])))
+    assert norm(normal) > 0.9999
+
     vertex = torch.Tensor(list(map(float, lines[4:])))
     data = torch.Tensor([0] + list(map(float, lines[1:])) + [-1, -1])
 
@@ -18,6 +22,7 @@ def parse_cylinder(lines):
     
     radius = float(lines[1])
     axis = torch.Tensor(list(map(float, lines[2:5])))
+    assert norm(axis) > 0.9999
     vertex = torch.Tensor(list(map(float, lines[5:])))
     data = torch.Tensor([1] + list(map(float, lines[1:])) + [-1])
 
@@ -35,6 +40,7 @@ def parse_cone(lines):
     
     angle = float(lines[1])
     axis = torch.Tensor(list(map(float, lines[2:5])))
+    assert norm(axis) > 0.9999
     vertex = torch.Tensor(list(map(float, lines[5:])))
     data = torch.Tensor([3] + list(map(float, lines[1:])) + [-1])
 
@@ -45,6 +51,7 @@ def parse_torus(lines):
     major_radius = float(lines[1])
     minor_radius = float(lines[2])
     axis = torch.Tensor(list(map(float, lines[3:6])))
+    assert norm(axis) > 0.9999
     center = torch.Tensor(list(map(float, lines[6:])))
     data = torch.Tensor([4] + list(map(float, lines[1:])))
 
