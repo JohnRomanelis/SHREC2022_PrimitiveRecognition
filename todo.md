@@ -1,0 +1,4 @@
+ - Visualize surfaces based on the given parameters
+ - Separate Regression Heads for only normals and only vertices (?)
+ - Include all regressors together with the classification network
+ - Add one-cycle optimizer to the mix
