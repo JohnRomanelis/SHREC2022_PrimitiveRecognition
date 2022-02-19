@@ -8,6 +8,14 @@ class GetMean():
 
         return x
 
+class KeepInitialPoints():
+
+    def __call__(self, x):
+
+        x['initial_points'] = x['x']
+
+        return x
+
 class Initialization():
 
     def __call__(self, x):

@@ -10,6 +10,7 @@ path = "/home/ioannis/Desktop/programming/data/SHREC/SHREC2022/dataset"
 
 train_transforms = [t.Translate(), 
                     t.SphereNormalization(), 
+                    t.Initialization(),
                     t.RandomRotate(180, 0),
                     t.RandomRotate(180, 1),
                     t.RandomRotate(180, 2),
@@ -48,7 +49,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=1e-3)
 criterion = torch.nn.CrossEntropyLoss()
 
 # 
-num_epochs = 2
+num_epochs = 100
 eval_step = 2
 for epoch in range(num_epochs):
     # for loss and accuracy tracking the training set

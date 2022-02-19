@@ -239,17 +239,22 @@ class ConeLoss(Losses):
 
     def __call__(self, cone_pred, actual_cone, trans):
         
-        pred_theta, pred_axis, pred_vertex = self.transform_cone_outputs(cone_pred, trans)
+        if trans is not None:
+            pred_theta, pred_axis, pred_vertex = self.transform_cone_outputs(cone_pred, trans)
+        else:
+            pred_theta, pred_axis, pred_vertex = cone_pred[:,0], cone_pred[:, 1:4], cone_pred[:, 4:7]
+            
 
         actual_theta, actual_axis, actual_vertex =  actual_cone[:,0], actual_cone[:,1:4], actual_cone[:,4:7]
-        
+
+
         #
         a_loss = self.AxisToAxisLoss(pred_axis, actual_axis)
         # index = torch.isnan(a_loss)
         # print(pred_axis[index])
         # print(actual_axis[index])
         #
-        v_loss = self.PointToAxisLoss(pred_vertex, actual_axis, actual_vertex)
+        v_loss = self.PointToPointLoss(pred_vertex, actual_vertex)
         #
         t_loss = self.ScalarToScalarLoss(pred_theta, actual_theta)
 
