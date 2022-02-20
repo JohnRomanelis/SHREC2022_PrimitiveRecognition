@@ -24,6 +24,7 @@ def minkowski_collate(list_data):
     shifts = []
     inv_rotations = []
     means = []
+    indexes = []
     
     for d in list_data:
         norm_factors.append(d['norm_factor'])
@@ -31,6 +32,7 @@ def minkowski_collate(list_data):
         if 'inverse_rotation' in d.keys():
             inv_rotations.append(d['inverse_rotation'])
         means.append(d['mean'])
+        indexes.append(d['index'])
         
     norm_factors = torch.stack(norm_factors)
     shifts = torch.stack(shifts)
@@ -48,7 +50,8 @@ def minkowski_collate(list_data):
         "trans": {"norm_factors"  : norm_factors,
                   "shifts"        : shifts,
                   "inv_rotations" : inv_rotations if len(inv_rotations) > 0 else None
-                 }
+                 },
+        "indexes" : indexes
         }
 
 

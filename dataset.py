@@ -178,7 +178,7 @@ class SHREC2022Primitives(torch.utils.data.Dataset):
         pcloud = parse_point_cloud(pc_name)
         label = parse_label(gt_name) if self.train else {'data': None}
 
-        data = {"x": pcloud, "y": label['data']}
+        data = {"x": pcloud, "y": label['data'], "index":index}
         
         for t in self.transform:
             data = t(data)
