@@ -3,3 +3,5 @@ notebooks/
 .ipynb_checkpoints/
 MinkowskiEngine/
 __pycache__/
+regressor_notebooks/
+trash/

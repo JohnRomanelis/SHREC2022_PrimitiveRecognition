@@ -1,5 +1,28 @@
 import torch
 
+
+class GetMean():
+    
+    def __call__(self, x):
+        x["mean"] = x['x'].mean(0)
+
+        return x
+
+class KeepInitialPoints():
+
+    def __call__(self, x):
+
+        x['initial_points'] = x['x']
+
+        return x
+
+class Initialization():
+
+    def __call__(self, x):
+
+        x["inverse_rotation"] = torch.eye(3)
+        return x
+
 class SphereNormalization():
     
     def __init__(self, scale=1):
@@ -56,10 +79,11 @@ class RandomRotate():
         trans = self._R(rad)
         
         x["rotation"] = trans
-        x["inverse_rotation"] = self._R(-rad)
+        x["inverse_rotation"] = x["inverse_rotation"] @ self._R(-rad)
         x["x"] = (trans.unsqueeze(0) @ x["x"].unsqueeze(-1)).squeeze(-1)
         
         return x
+
     
     def _R(self, rad):
         
