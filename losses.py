@@ -72,7 +72,8 @@ class Losses():
             ax: Bx3 actual axis
             v:  Bx3 a point on the actual axis
         '''
-
+        #print(p)
+        #print(p.shape, ax.shape, v.shape)
         assert p.shape[-1] == 3 and ax.shape[-1] == 3 and v.shape[-1] == 3
         
         U1 = p - v
@@ -135,8 +136,10 @@ class Losses():
 class PlaneLoss(Losses):
     
     def __call__(self, plane_pred, actual_plane, trans):
-        
-        pred_normal, pred_vertex = self.transform_plane_outputs(plane_pred, trans)
+        if trans is not None:
+            pred_normal, pred_vertex = self.transform_plane_outputs(plane_pred, trans)
+        else: 
+            pred_normal, pred_vertex = plane_pred[:, 0:3], plane_pred[:, 3:6]
 
         actual_normal, actual_vertex = actual_plane[:,:3], actual_plane[:,3:6]
         
@@ -178,18 +181,20 @@ class CylinderLoss(Losses):
     
 
     def __call__(self, cyl_pred, actual_cyl, trans):
-        
-        pred_r, pred_axis, pred_vertex = self.transform_cylinder_outputs(cyl_pred, trans)
+        #print(' -------------  ')
+        #print(cyl_pred)
+        #print(actual_cyl)
+        if trans is not None:
+            pred_r, pred_axis, pred_vertex = self.transform_cylinder_outputs(cyl_pred, trans)
+        else:
+            pred_r, pred_axis, pred_vertex = cyl_pred[:, 0], cyl_pred[:, 1:4], cyl_pred[:, 4:7]
+
+        #print(pred_r, pred_axis, pred_vertex)
 
         actual_r, actual_axis, actual_vertex = actual_cyl[:,0], actual_cyl[:,1:4], actual_cyl[:,4:7]
         
         #
         a_loss = self.AxisToAxisLoss(pred_axis, actual_axis)
-        #index = torch.isnan(a_loss)
-        #print(index.shape)
-        #print(pred_axis[index])
-        #print(actual_axis[index])
-        
         #
         v_loss = self.PointToAxisLoss(pred_vertex, actual_axis, actual_vertex)
         #
@@ -299,7 +304,11 @@ class SphereLoss(Losses):
 
     def __call__(self, sphere_pred, actual_sphere, trans):
         
-        pred_r, pred_center = self.transform_sphere_outputs(sphere_pred, trans)
+        if trans is not None:
+            pred_r, pred_center = self.transform_sphere_outputs(sphere_pred, trans)
+        else:
+            pred_r, pred_center = sphere_pred[:, 0], sphere_pred[:, 1:4]
+
 
         actual_r, actual_center = actual_sphere[:,0], actual_sphere[:,1:4] 
         
@@ -343,8 +352,10 @@ class TorusLoss(Losses):
     
     
     def __call__(self, torus_pred, actual_torus, trans):
-        
-        pred_R, pred_r, pred_axis, pred_center = self.transform_torus_outputs(torus_pred, trans)
+        if trans is not None:
+            pred_R, pred_r, pred_axis, pred_center = self.transform_torus_outputs(torus_pred, trans)
+        else:
+            pred_R, pred_r, pred_axis, pred_center = torus_pred[:, 0], torus_pred[:, 1], torus_pred[:, 2:5], torus_pred[:, 5:8]
 
         actual_R, actual_r, actual_axis, actual_center = actual_torus[:,0], actual_torus[:,1], \
                                                          actual_torus[:,2:5], actual_torus[:,5:8]

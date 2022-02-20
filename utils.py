@@ -3,13 +3,22 @@ import torch
 import open3d as o3d
 
 def minkowski_collate(list_data):
-    coordinates, features, labels = ME.utils.sparse_collate(
-        [d['x'] for d in list_data],
-        [d['x'] for d in list_data],
-        [d['y'].unsqueeze(0) for d in list_data],
-        dtype = torch.float32
-    )
-    
+
+    if list_data[0]['y'] is not None:
+        coordinates, features, labels = ME.utils.sparse_collate(
+            [d['x'] for d in list_data],
+            [d['x'] for d in list_data],
+            [d['y'].unsqueeze(0) for d in list_data],
+            dtype = torch.float32
+        )
+    else:
+        coordinates, features = ME.utils.sparse_collate(
+            [d['x'] for d in list_data],
+            [d['x'] for d in list_data],
+            dtype = torch.float32
+        )
+        labels = None
+
     # collating other data
     norm_factors = []
     shifts = []

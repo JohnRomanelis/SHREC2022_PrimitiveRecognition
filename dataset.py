@@ -105,26 +105,29 @@ class SHREC2022Primitives(torch.utils.data.Dataset):
             "torus": [4]
         }
 
+        self.train = train
         self.path = os.path.join(path, "training" if train else "test")
+        print("Dataset path: ", self.path)
         self.pc_prefix = "pointCloud"
         self.gt_prefix = "GTpointCloud"
         self.format = ".txt"
         self.valid = valid if train else False
-        self.size = 0 if train else len(os.listdir(self.path))
+        self.size = 0 if train else len(os.listdir(os.path.join(self.path, self.pc_prefix)))
         self.transform = transform
-        
-        #check if an existing train-validation split matches the one given
-        split_info_file = os.path.join(path, "training/split_info.txt")
-        self.t_savefile = os.path.join(path, "training/train_split.txt")
-        self.v_savefile = os.path.join(path, "training/valid_split.txt")
-        if os.path.exists(split_info_file):
-            with open(split_info_file) as F:
-                v, vsize, tsize, c = list(map(float, F.readline().split(',')))
 
-                if v == valid_split and self.shape_indices[category][-1] == c:
-                    print("Specified split already exists. Using the existing one.")
-                    self.size = int(vsize if self.valid else tsize)
-                    return
+        if train:
+            #check if an existing train-validation split matches the one given
+            split_info_file = os.path.join(path, "training/split_info.txt")
+            self.t_savefile = os.path.join(path, "training/train_split.txt")
+            self.v_savefile = os.path.join(path, "training/valid_split.txt")
+            if os.path.exists(split_info_file):
+                with open(split_info_file) as F:
+                    v, vsize, tsize, c = list(map(float, F.readline().split(',')))
+
+                    if v == valid_split and self.shape_indices[category][-1] == c:
+                        print("Specified split already exists. Using the existing one.")
+                        self.size = int(vsize if self.valid else tsize)
+                        return
         
         if train:
             print("Creating a new train-validation split.")
@@ -160,10 +163,12 @@ class SHREC2022Primitives(torch.utils.data.Dataset):
     
     def __getitem__(self, index):
         
-        with open(self.v_savefile if self.valid else self.t_savefile, "r") as F:
-            index = F.readlines()[index]
-            index = int(index) if '\n' not in index else int(index[:-1])
-         
+        if self.train:
+            with open(self.v_savefile if self.valid else self.t_savefile, "r") as F:
+                index = F.readlines()[index]
+                index = int(index) if '\n' not in index else int(index[:-1])
+        else:
+            index = index + 1
         
         #assembling the file name for the data and labels
         pc_name = os.path.join(self.path, self.pc_prefix, self.pc_prefix + str(index) + self.format)
@@ -171,7 +176,7 @@ class SHREC2022Primitives(torch.utils.data.Dataset):
         
         #parsing the point cloud
         pcloud = parse_point_cloud(pc_name)
-        label = parse_label(gt_name)
+        label = parse_label(gt_name) if self.train else {'data': None}
 
         data = {"x": pcloud, "y": label['data']}
         

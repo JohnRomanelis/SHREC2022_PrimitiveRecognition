@@ -15,7 +15,7 @@ from geomfitty._descriptor import Direction, Position, PositiveNumber
 class Cone(geom3d.GeometricShape):
     vertex = Position(3)
     axis = Direction(3)
-    theta = PositiveNumber()
+    #theta = PositiveNumber()
 
     def __init__(self, theta, axis, vertex):
         self.vertex = vertex
@@ -33,7 +33,7 @@ class Cone(geom3d.GeometricShape):
         l = b * np.sin(self.theta)
         d = a/np.cos(self.theta) - l  #np.abs
 
-        return d
+        return np.abs(d)
 
 
 def cone_fit(points, weights=None, initial_guess: Cone = None):
